@@ -1,4 +1,6 @@
 test.exe
 test
+**/input.txt
+**/testInput.txt
 .session
 
