@@ -3,7 +3,9 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <cstdint>
 #include <limits>
+#include <queue>
 
 const std::string headers[7] = {
     "seed-to-soil map:",
@@ -16,27 +18,27 @@ const std::string headers[7] = {
 };
 
 struct Mapping {
-    uint64_t dest;
-    uint64_t source;
-    uint64_t range;
+    uint64_t start;
+    uint64_t end;
+    int64_t offset;
 };
 
 struct Range {
     uint64_t start;
-    uint64_t size;
+    uint64_t end;
 };
 
 std::vector<std::string> input;
+
 std::vector<Mapping> mappings[7];
-std::vector<Range> seedRanges;
-std::vector<Range> ranges;
+std::queue<Range> *inputs, *outputs;
 
 void readSeedRanges(std::string line) {
     line = line.substr(line.find(':') + 1);
 
     std::stringstream ss(line);
     std::string number;
-    std::vector<uint64_t> numbers;
+    std::vector<int64_t> numbers;
     while (getline(ss, number, ' ')) {
         //  remove extraneous spaces
         number.erase(std::remove(number.begin(), number.end(), ' '), number.end());
@@ -49,9 +51,10 @@ void readSeedRanges(std::string line) {
     for (int i = 0; i < numbers.size() / 2; i++) {
         Range range;
         range.start = numbers.at(i * 2);
-        range.size = numbers.at(i * 2 + 1);
+        int64_t size = numbers.at(i * 2 + 1);
+        range.end = range.start + size - 1;
 
-        seedRanges.push_back(range);
+        inputs->push(range);
     }
 }
 
@@ -65,87 +68,98 @@ void readMappings(std::string header, std::vector<Mapping> &mappings) {
     
     while ((*it) != "" && it != input.end()) {
         Mapping mapping;
+        int64_t dest, source, range;
         
         std::stringstream ss((*it));
         std::string number;
         
         getline(ss, number, ' ');
-        mapping.dest = std::stoull(number);
+        dest = std::stoull(number);
 
         getline(ss, number, ' ');
-        mapping.source = std::stoull(number);
+        source = std::stoull(number);
 
         getline(ss, number, ' ');
-        mapping.range = std::stoull(number);
+        range = std::stoull(number);
 
+        mapping.start = source;
+        mapping.end = source + range - 1;
+        mapping.offset = dest - source;
+        
         mappings.push_back(mapping);
         it++;
     }
 }
 
-void transformRange(Range range, std::vector<Mapping> &mappings) {
-    // std::cout << "Range: " << range.start << " - " << range.start + range.size - 1 << std::endl;
-    
-    for (auto mapping : mappings) {
-        uint64_t mappingEnd = mapping.source + mapping.range - 1;
-        uint64_t rangeEnd = range.start + range.size - 1;
+void transform() {
+    for (int stage = 0; stage < 7; stage++) {
+        while (!inputs->empty()) {
+            Range range = inputs->front();
+            inputs->pop();
+            
+            bool matched = false;
+            for (auto mapping : mappings[stage]) {
+                //  check range overlap
+                if (range.start <= mapping.end && mapping.start <= range.end) {
+                    matched = true;
+                    
+                    if (range.start < mapping.start) {
+                        Range newRange;
+                        newRange.start = range.start;
+                        newRange.end = mapping.start - 1;
+                        inputs->push(newRange);
+                        
+                        range.start = mapping.start;
+                    }
+
+                    if (range.end > mapping.end) {
+                        Range newRange;
+                        newRange.start = mapping.end + 1;
+                        newRange.end = range.end;
+                        inputs->push(newRange);
+                        
+                        range.end = mapping.end;
+                    }
+                    
+                    //  adjust working range
+                    range.start += mapping.offset;
+                    range.end += mapping.offset;
+                    outputs->push(range);
+                    
+                    break;
+                }
+            }
+            
+            if (!matched) {
+                outputs->push(range);
+            }
+        }
         
-        //  check range overlap
-        if (range.start >= mappingEnd or mapping.source >= rangeEnd) {
-            //  add start partition
-            if (range.start < mapping.source) {
-                Range newRange;
-                newRange.start = range.start;
-                newRange.size = mapping.source - range.start;
-                ranges.push_back(newRange);
-                
-                range.start = mapping.source;
-                range.size -= newRange.size;
-            }
-
-            //  add end partition
-            if (rangeEnd > mappingEnd) {
-                Range newRange;
-                newRange.start = mappingEnd + 1;
-                newRange.size = rangeEnd - mappingEnd + 1;
-                ranges.push_back(newRange);
-                
-                range.size -= mappingEnd - range.start + 1;
-            }
-
-            //  adjust working range
-            uint64_t diff = mapping.dest - mapping.source;
-            range.start += diff;
+        if (stage < 6) {
+            std::queue<Range> *temp = inputs;
+            inputs = outputs;
+            outputs = temp;
         }
     }
 }
 
-uint64_t findLowestLocationNumber() {
-    uint64_t lowest = std::numeric_limits<uint64_t>::max();
+int64_t findLowestLocationNumber() {
+    transform();
 
-    for (auto seedRange : seedRanges) {
-        ranges.clear();
-        ranges.push_back(seedRange);
-
-        for (int i = 0; i < 7; i++) {
-            uint64_t count = 0;
-            for (auto range : ranges) {
-                transformRange(range, mappings[i]);
-                count++;
-                std::cout << count << std::endl;
-            }
-        }
-
-        for (auto range : ranges) {
-            lowest = std::min(range.start, lowest);
-        }
+    uint64_t lowest = std::numeric_limits<int64_t>::max();
+    while (!outputs->empty()) {
+        Range range = outputs->front();
+        outputs->pop();
+        lowest = std::min(range.start, lowest);
     }
-    
+
     return lowest;
 }
 
-
 int main(int argc, char* argv[]) {
+    inputs = new std::queue<Range>();
+    outputs = new std::queue<Range>();
+    
     std::string line;
     std::ifstream file("2023/day05/input.txt");
     if (file.is_open()) {
@@ -158,9 +172,13 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < 7; i++) {
             readMappings(headers[i], mappings[i]);
         }
-    }
+        std::cout << findLowestLocationNumber() << std::endl;
+    } else {
+        std::cout << "Couldn't read input!" << std::endl;
+    }    
     
-    std::cout << findLowestLocationNumber() << std::endl;
+    delete inputs;
+    delete outputs;
     
     return 0;
 }
