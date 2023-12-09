@@ -3,19 +3,31 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <tuple>
+
+enum HandType {
+    HIGH_CARD = 0,
+    ONE_PAIR,
+    TWO_PAIR,
+    THREE_OF_A_KIND,
+    FULL_HOUSE,
+    FOUR_OF_A_KIND,
+    FIVE_OF_A_KIND
+};
 
 const char cards[] = {'e', 'd', 'c', 'b', 'a', '9', '8', '7', '6', '5', '4', '3', '2'};
 
 struct Hand {
     std::string cards;
     int bid;
+    int type;
     
-    static bool cmp(const Hand& a, const Hand& b) {
-        return a.cards.compare(b.cards) < 0;
-    }
+    bool operator < (const Hand& other) const {
+        return std::tie(type, cards) < std::tie(other.type, other.cards);
+    }    
 };
 
-std::vector<Hand> hands[7];
+std::vector<Hand> hands;
 
 int getHandType(const Hand& hand) {
     int count[13];
@@ -48,30 +60,30 @@ int getHandType(const Hand& hand) {
     int secondHighestCount = count[secondHighestIndex];
 
     if (highestCount == 5) {
-        return 6;   //  five of a kind
+        return FIVE_OF_A_KIND;
     }
     
     if (highestCount == 4) {
-        return 5;   //  four of a kind
+        return FOUR_OF_A_KIND;
     }
     
     if (highestCount == 3 && secondHighestCount == 2) {
-        return 4;   //  full house
+        return FULL_HOUSE;
     }
     
     if (highestCount == 3) {
-        return 3;   //  three of a kind
+        return THREE_OF_A_KIND;
     }
 
     if (highestCount == 2 && secondHighestCount == 2) {
-        return 2;   //  two pair
+        return TWO_PAIR;
     }
 
     if (highestCount == 2) {
-        return 1;   //  one pair
+        return ONE_PAIR;
     }
     
-    return 0;   //  high card
+    return HIGH_CARD;   //  high card
 }
 
 int main(int argc, char* argv[]) {
@@ -90,29 +102,22 @@ int main(int argc, char* argv[]) {
             std::replace(hand.cards.begin(), hand.cards.end(), 'J', 'b');
             std::replace(hand.cards.begin(), hand.cards.end(), 'T', 'a');
             
-            hands[getHandType(hand)].push_back(hand);
+            hand.type = getHandType(hand);
+            hands.push_back(hand);
         }
+        file.close();
 
-        for (int i = 0; i < 7; i++) {
-            std::sort(hands[i].begin(), hands[i].end(), Hand::cmp);
-        }
-        
         int winnings = 0;
         int rank = 1;
         
-        for (int i = 0; i < 7; i++) {
-            std::cout << "-------------------  " << std::endl;
-            for (auto hand : hands[i]) {
-                winnings += (hand.bid * rank);
-                std::cout << rank << " - " << hand.cards << " - " << hand.bid << std::endl;
-                
-                rank++;
-            }
+        std::sort(hands.begin(), hands.end());
+        for (const auto& hand : hands) {
+            winnings += (hand.bid * rank);
+            std::cout << hand.type << " - " << rank << " - " << hand.cards << " - " << hand.bid << std::endl;
+            
+            rank++;
         }
         std::cout << std::endl << winnings << std::endl;
-        
-        file.close();
-        
     } else {
         std::cout << "Couldn't read input!" << std::endl;
     }    
