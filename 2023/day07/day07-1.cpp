@@ -19,8 +19,8 @@ const char cards[] = {'e', 'd', 'c', 'b', 'a', '9', '8', '7', '6', '5', '4', '3'
 
 struct Hand {
     std::string cards;
+    HandType type;
     int bid;
-    int type;
     
     bool operator < (const Hand& other) const {
         return std::tie(type, cards) < std::tie(other.type, other.cards);
@@ -29,7 +29,7 @@ struct Hand {
 
 std::vector<Hand> hands;
 
-int getHandType(const Hand& hand) {
+HandType getHandType(const Hand& hand) {
     int count[13];
     for (int i = 0; i < 13; i++) {
         count[i] = 0;
@@ -83,7 +83,7 @@ int getHandType(const Hand& hand) {
         return ONE_PAIR;
     }
     
-    return HIGH_CARD;   //  high card
+    return HIGH_CARD;
 }
 
 int main(int argc, char* argv[]) {
