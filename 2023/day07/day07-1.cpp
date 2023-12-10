@@ -30,13 +30,16 @@ struct Hand {
 std::vector<Hand> hands;
 
 HandType getHandType(const Hand& hand) {
-    int count[13];
-    for (int i = 0; i < 13; i++) {
+    const int NUM_CARD_VALUES = 13;
+    
+    //  count frequency of each card value
+    int count[NUM_CARD_VALUES];
+    for (int i = 0; i < NUM_CARD_VALUES; i++) {
         count[i] = 0;
     }
     
     for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < 13; j++) {
+        for (int j = 0; j < NUM_CARD_VALUES; j++) {
             if (hand.cards[i] == cards[j]) {
                 count[j]++;
             }
@@ -44,7 +47,7 @@ HandType getHandType(const Hand& hand) {
     }
     
     int highestIndex = 0;
-    for (int i = 0; i < 13; i++) {
+    for (int i = 1; i < NUM_CARD_VALUES; i++) {
         if (count[i] > count[highestIndex]) {
             highestIndex = i;
         }
@@ -52,13 +55,14 @@ HandType getHandType(const Hand& hand) {
     int highestCount = count[highestIndex];
     
     int secondHighestIndex = 0;
-    for (int i = 0; i < 13; i++) {
+    for (int i = 1; i < NUM_CARD_VALUES; i++) {
         if (i != highestIndex && count[i] > count[secondHighestIndex]) {
             secondHighestIndex = i;
         }
     }
     int secondHighestCount = count[secondHighestIndex];
 
+    //  determine hand type
     if (highestCount == 5) {
         return FIVE_OF_A_KIND;
     }
