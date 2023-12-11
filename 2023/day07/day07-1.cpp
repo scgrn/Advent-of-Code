@@ -55,6 +55,9 @@ HandType getHandType(const Hand& hand) {
     int highestCount = count[highestIndex];
     
     int secondHighestIndex = 0;
+    if (highestIndex == 0) {
+        secondHighestIndex = 1;
+    }
     for (int i = 1; i < NUM_CARD_VALUES; i++) {
         if (i != highestIndex && count[i] > count[secondHighestIndex]) {
             secondHighestIndex = i;
