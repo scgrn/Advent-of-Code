@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <cstdint>
+#include <cstring>
 #include <unordered_map>
 
 const int WIDTH = 140;
@@ -14,6 +15,10 @@ struct Vector {
     int x, y;
 };
 Vector start;
+
+bool loop[HEIGHT][WIDTH];
+int xStart[HEIGHT], xEnd[HEIGHT];
+int yStart, yEnd;
 
 std::unordered_map<char, std::vector<Vector>> segments {
     {'|', {Vector{ 0, -1}, Vector{ 0,  1}}},
@@ -47,15 +52,22 @@ void findStart() {
     if (d && r) { map[start.y][start.x] = 'F'; }
 }
 
-int64_t measureLoop() {
+void traceLoop() {
+    for (int y = 0; y < HEIGHT; y++) {
+        for (int x = 0; x < WIDTH; x++) {
+            loop[y][x] = false;
+        }
+        xStart[y] = WIDTH;
+        xEnd[y] = 0;
+    }
+    yStart = HEIGHT;
+    yEnd = 0;
+    
     Vector current = start;
     Vector prev = current;
-    int64_t steps = 0;
 
     bool done = false;
     while (!done) {
-        steps++;
-        
         char c = map[current.y][current.x];
         Vector delta = segments.at(c)[0];
         
@@ -69,9 +81,38 @@ int64_t measureLoop() {
         if (current.x == start.x && current.y == start.y) {
             done = true;
         }
-    }
 
-    return steps / 2;
+        loop[current.y][current.x] = true;
+        
+        xStart[current.y] = std::min(xStart[current.y], current.x);
+        xEnd[current.y] = std::max(xEnd[current.y], current.x);
+        yStart = std::min(yStart, current.y);
+        yEnd = std::max(yEnd, current.y);
+    }
+}
+
+int countInterior() {
+    int count = 0;
+    
+    for (int y = yStart + 1; y <= yEnd; y++) {
+        for (int x = xStart[y] + 1; x <= xEnd[y]; x++) {
+            if (!loop[y][x]) {
+                int pipeCount = 0;
+                for (int tx = xStart[y]; tx < x; tx++) {
+                    if (loop[y][tx]) {
+                        if (map[y][tx] == '|' || map[y][tx] == 'J' || map[y][tx] == 'L') {
+                            pipeCount++;
+                        }
+                    }
+                }
+                if (pipeCount % 2 != 0) {
+                    count++;
+                }
+            }
+        }
+    }
+    
+    return count;
 }
 
 int main(int argc, char* argv[]) {
@@ -84,7 +125,10 @@ int main(int argc, char* argv[]) {
         file.close();
 
         findStart();
-        std::cout << measureLoop() << std::endl;
+        traceLoop();
+        
+        int count = countInterior();
+        std::cout << count << std::endl;
     } else {
         std::cout << "Couldn't read input!" << std::endl;
     }    
