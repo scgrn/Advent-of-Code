@@ -6,7 +6,7 @@ year=$1
 day=$2
 
 urlPath="https://adventofcode.com/$year/day/$day/input"
-cookie="$(<.session)"
+cookie="$(<$year/.session)"
 
 if [ 1 -eq "${#day}" ]; then
     day="0`echo $day`"

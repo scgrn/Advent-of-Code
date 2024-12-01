@@ -3,5 +3,5 @@ test
 **/input.txt
 **/testInput.txt
 **/puzzle.txt
-.session
+**/.session
 
