@@ -3,21 +3,53 @@
 #include <sstream>
 #include <vector>
 #include <unordered_map>
+#include <cmath>
+
+std::unordered_map<int, std::vector<int>> rules;
+std::vector<std::vector<int>> updates;
+
+bool checkRules(int page1, int page2) {
+    if (rules.find(page2) != rules.end()) {
+        for (int i = 0; i < rules[page2].size(); i++) {
+            if (rules[page2][i] == page1) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool checkOrder(std::vector<int> update) {
+    for (int i = 0; i < update.size(); i ++) {
+        for (int j = 0; j < update.size(); j ++) {
+            if (i != j) {
+                if (i < j) {
+                    if (!checkRules(update[i], update[j])) {
+                        return false;
+                    }
+                } else {
+                    if (!checkRules(update[j], update[i])) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
 
 int main(int argc, char* argv[]) {
-    std::ifstream file("2024/day05/testInput.txt");
+    std::ifstream file("2024/day05/input.txt");
     std::string line;
 
-    std::unordered_map<int, std::vector<int>> rules;
-    std::vector<std::vector<int>> updates;
-    
     if (file.is_open()) {
         while (getline(file, line)) {
             if (!line.empty()) {
                 if (line[2] == '|') {
                     int page1 = atoi(line.substr(0, 2).c_str());
                     int page2 = atoi(line.substr(3, 2).c_str());
-                    std::cout << page1 << " | " << page2 << std::endl;
                     rules[page1].push_back(page2);
                 } else {
                     std::vector<int> update;
@@ -34,10 +66,9 @@ int main(int argc, char* argv[]) {
         
         int total = 0;
         for (auto update : updates) {
-            for (int i = 0; i < update.size(); i ++) {
-                std::cout << update[i] << ",";
+            if (checkOrder(update)) {
+                total += update[floor(update.size() / 2)];
             }
-            std::cout << std::endl;
         }
         std::cout << total << std::endl;
     } else {
