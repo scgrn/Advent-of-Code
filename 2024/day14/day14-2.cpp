@@ -68,7 +68,6 @@ void simulate(int seconds) {
 int main(int argc, char* argv[]) {
     std::ifstream file("2024/day14/input.txt");
     std::string line;
-    std::vector<int> soup;
 
     if (file.is_open()) {
         std::regex pattern(R"(-?[0-9]+)");
