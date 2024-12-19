@@ -30,37 +30,35 @@ void findRobot() {
             }
         }
     }
-    std::cout << "ROBOT NOT FOUND" << std::endl;
 }
 
 void simulate() {
     for (int move : instructions) {
-        Vec2 pos = robot;
         bool moveAllowed = true;
 
-        newRobot = Vec2{robot.x + dirs[move].x, robot.y + dirs[move].y};
-        if (map[pos.y][pos.x] == '#') {
+        Vec2 newPos = Vec2{robot.x + dirs[move].x, robot.y + dirs[move].y};
+        if (map[newPos.y][newPos.x] == '#') {
             moveAllowed = false;
         }
-        if (map[pos.y][pos.x] == 'O') {
-            // scan to edge and make sure there is at least one empty space
-            
-        }
-/*
-        while (pos.x > 0 && pos.x < width - 1 && pos.y > 0 && pos.y < height - 1) {
-            pos.x = pos.x + dirs[move].x;
-            pos.y = pos.y + dirs[move].y;
-            if (map[pos.y][pos.x] == '#') {
-                break;
+        if (map[newPos.y][newPos.x] == 'O') {
+            bool foundSpace = false;
+            Vec2 pos = newPos;
+            while (pos.x > 0 && pos.x < width - 1 && pos.y > 0 && pos.y < height - 1&& map[pos.y][pos.x] != '#') {
+                pos.x = pos.x + dirs[move].x;
+                pos.y = pos.y + dirs[move].y;
+                if (map[pos.y][pos.x] == '.') {
+                    foundSpace = true;
+                    map[pos.y][pos.x] = 'O';
+                    break;
+                }
             }
-            if (map[pos.y][pos.x] == 'O') {
-                robot = pos;
-                map[robot.y][robot.x] = '.';
-                continue;
+            if (!foundSpace) {
+                moveAllowed = false;
             }
         }
-*/
+
         if (moveAllowed) {
+            map[robot.y][robot.x] = '.';
             robot.x += dirs[move].x;
             robot.y += dirs[move].y;
         }
@@ -81,7 +79,7 @@ int sumGPS() {
 }
 
 int main(int argc, char* argv[]) {
-    std::ifstream file("2024/day15/testInput.txt");
+    std::ifstream file("2024/day15/input.txt");
     std::string line;
 
     if (file.is_open()) {
@@ -103,8 +101,6 @@ int main(int argc, char* argv[]) {
                     int dir = dirString.find(c);
                     if (dir != std::string::npos) {
                         instructions.emplace_back(dir);
-                    } else {
-                        std::cout << "UNKNOWN CHARACTER" << std::endl;
                     }
                 }
             }
