@@ -2,6 +2,7 @@ test.exe
 test
 **/input.txt
 **/testInput.txt
+**/testInput*.txt
 **/puzzle.txt
 **/.session
 
