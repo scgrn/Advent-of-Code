@@ -21,17 +21,35 @@ struct Node {
     Vec2 pos;
     int cost;
     bool solid;
+    Vec2 source;
 };
 std::vector<std::vector<Node>> grid;
 int width, height;
 
+std::vector<Node> path;
 Vec2 start, goal;
+
+std::vector<Vec2> cheatDeltas;
 
 struct CompareNode {
     bool operator() (Node const& a, Node const& b) const {
         return a.cost > b.cost;
     }
 };
+
+inline int manhattanDistance(Vec2 const& a, Vec2 const& b) {
+    return (abs(a.x - b.x) + abs(a.y - b.y));
+}
+
+void constructCheatDeltas(int steps) {
+    for (int y = -steps; y <= steps; y++) {
+        for (int x = -steps; x <= steps; x++) {
+            if (manhattanDistance(Vec2{x, y}, Vec2{0, 0}) == steps) {
+                cheatDeltas.emplace_back(Vec2{x, y});
+            }
+        }
+    }
+}
 
 void initGrid(std::vector<std::string> const& map) {
     width = map[0].length();
@@ -60,10 +78,11 @@ void initGrid(std::vector<std::string> const& map) {
     }
 }
 
-int search() {
+void search() {
     std::priority_queue<Node, std::vector<Node>, CompareNode> frontier;
    
     grid[start.y][start.x].cost = 0;
+    grid[start.y][start.x].source = start;
     frontier.push(grid[start.y][start.x]);
     
     while (!frontier.empty()) {
@@ -84,14 +103,43 @@ int search() {
 
                     if (newCost < grid[newY][newX].cost) {
                         grid[newY][newX].cost = newCost;
+                        grid[newY][newX].source = current.pos;
                         frontier.push(grid[newY][newX]);
                     }
                 }
             }
         }
     }
+    
+    Node current = grid[goal.y][goal.x];
+    path.emplace_back(current);
+    while (current.pos.x != start.x || current.pos.y != start.y) { 
+        Vec2 source = grid[current.pos.y][current.pos.x].source;
+        current = grid[source.y][source.x];
+        path.emplace_back(current);
+    }
+}
 
-    return grid[goal.y][goal.x].cost;
+int countCheats() {
+    int total = 0;
+
+    for (auto& pos : path) {
+        for (auto& delta : cheatDeltas) {
+            int nx = pos.pos.x + delta.x;
+            int ny = pos.pos.y + delta.y;
+
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                if (!grid[ny][nx].solid) {
+                    int newCost = pos.cost + 2;
+                    if (grid[ny][nx].cost - newCost >= 100) {
+                        total++;
+                    }
+                }
+            }
+        }
+    }
+
+    return total;
 }
 
 int main(int argc, char* argv[]) {
@@ -105,11 +153,13 @@ int main(int argc, char* argv[]) {
             map.emplace_back(line);
         }
         file.close();
-        
-        initGrid(map);
 
-        std::cout << search() << std::endl;
-    } else {
+        initGrid(map);
+        constructCheatDeltas(2);
+        search(); 
+
+        std::cout << countCheats() << std::endl;
+   } else {
         std::cout << "Couldn't read input!" << std::endl;
     }
 
